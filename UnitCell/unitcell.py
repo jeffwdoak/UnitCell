@@ -1,4 +1,4 @@
-#!/software/enthought/python/epd-7.3-2-rh5-x86_64/bin/python
+#!/usr/bin/env python
 
 # UnitCell Class v1.9.9 Jeff Doak jeff.w.doak@gmail.com 09-19-2013
 # Changelog:

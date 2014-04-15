@@ -1,4 +1,4 @@
-#!/software/enthought/python/epd-7.3-2-rh5-x86_64/bin/python
+#!/usr/bin/env python
 
 # calc_pot_alignment2.py v1.0 11-3-2013 Jeff Doak jeff.w.doak@gmail.com
 # Calculates the electrostatic alignment between defected and perfect-crystal

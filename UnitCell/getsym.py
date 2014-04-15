@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/software/enthought/python/epd-7.3-2-rh5-x86_64/bin/python
 from unitcell import *
 import sys
 
