@@ -1,4 +1,4 @@
-#!/software/enthought/python/epd-7.3-2-rh5-x86_64/bin/python
+#!/usr/bin/env python
 
 # kmesh.py v1.0 9-23-2013 Jeff Doak jeff.w.doak@gmail.com
 

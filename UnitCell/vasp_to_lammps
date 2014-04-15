@@ -1,4 +1,4 @@
-#!/software/enthought/python/epd-7.3-2-rh5-x86_64/bin/python
+#!/usr/bin/env python
 # v1.0 Jeff Doak jwd686@u.northwestern.edu 8-1-2011
 # Note: Currently only supports orthogonal cells with vec_a1 being along x,
 # vec_a2 being along y, and vec_a3 being along z.
