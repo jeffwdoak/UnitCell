@@ -1,7 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
-# UnitCell Class v1.9.9 Jeff Doak jeff.w.doak@gmail.com 09-19-2013
+# UnitCell Class v2.0.0 Jeff Doak jeff.w.doak@gmail.com 09-26-2013
 # Changelog:
+# v2.0.0 - Added read_atat method.
 # v1.9.8 - Added add_atom method. May be a bug in this method!
 #        - Added delete_atom method.
 #        - Added change_atom_type method.
@@ -188,34 +189,7 @@ class UnitCell(object):
     atom_names = property(get_atom_names,set_atom_names)
 
     def __init__(self, input_=None,format_=None):
-        if isinstance(input_,str):
-            try:
-                input_ = open(input_,'r')
-            except IOError:
-                print "Error reading input file."
-                print "Empty UnitCell will be returned."
-                input_ = None
-        if isinstance(input_,file):
-            if format_ == None:
-                self.read_poscar(input_)
-            elif format_ == "lammps":
-                self.read_lammps_dump(input_)
-            elif format_ == "gulp_output":
-                self.read_gulp_output(input_)
-            elif format_ == "gulp_input":
-                self.read_gulp_input(input_)
-            elif format_ == "chgcar":
-                self.read_poscar(input_,vel=False)
-                self.read_chgcar(input_)
-                self.scale_density()
-            elif format_ == "locpot":
-                self.read_poscar(input_,vel=False)
-                self.read_chgcar(input_)
-            else:
-                print "Unknown format."
-                print "Empty UnitCell will be returned."
-                input_ = None
-        elif isinstance(input_,UnitCell):
+        if isinstance(input_,UnitCell):
             # Return a new UnitCell object that is a copy of input_
             self.name = input_.name
             self._scale = input_.scale
@@ -228,6 +202,36 @@ class UnitCell(object):
             self._atom_names = input_.atom_names  # Will this return a copy or the reference?
             self._vel_convention = input_.vel_convention
             self.atom_velocities = np.array(input_.atom_velocities)
+        elif isinstance(input_,str):
+            try:
+                input_ = open(input_,'r')
+            except IOError:
+                print "Error reading input file."
+                print "Empty UnitCell will be returned."
+                input_ = None
+        #if isinstance(input_,file):
+        else: # Assume input_ is a file
+            if format_ == None:
+                self.read_poscar(input_)
+            elif format_ == "lammps":
+                self.read_lammps_dump(input_)
+            elif format_ == "gulp_output":
+                self.read_gulp_output(input_)
+            elif format_ == "gulp_input":
+                self.read_gulp_input(input_)
+            elif format_ == "atat":
+                self.read_atat(input_)
+            elif format_ == "chgcar":
+                self.read_poscar(input_,vel=False)
+                self.read_chgcar(input_)
+                self.scale_density()
+            elif format_ == "locpot":
+                self.read_poscar(input_,vel=False)
+                self.read_chgcar(input_)
+            else:
+                print "Unknown format."
+                print "Empty UnitCell will be returned."
+                input_ = None
         if input_ == None:
             # Create 'empty' simple cubic unit cell as default.
             self.name = ""
@@ -500,7 +504,6 @@ class UnitCell(object):
         """
         self.set_scale()
         recip = 2.0*np.pi*np.linalg.inv(self.cell_vec.transpose())
-        #recip = np.linalg.inv(self.cell_vec.transpose())
         return recip
 
     def center_of_mass(self,potcar="POTCAR",conv="direct",vel=False):
@@ -683,6 +686,74 @@ class UnitCell(object):
         Read in unit cell information from an ezvasp-formatted file.
         """
         pass
+
+    def read_atat(self,input_):
+        """
+        Read in unit cell information from an ATAT-formatted file.
+        """
+        self.name = "ATAT_file"
+        self._scale = 1.0
+        # Read in coordinate vectors
+        coords = np.zeros((3,3))
+        for i in range(3):
+            line = input_.readline().split()
+            # Check if coordinate system is given as 3x3 vectors
+            # or a,b,c,alpha,beta,gamma
+            if len(line) == 6:
+                a = float(line[0]) 
+                b = float(line[1]) 
+                c = float(line[2])
+                alpha = float(line[3]) 
+                beta = float(line[4])
+                gamma = float(line[5])
+                coords = six_to_nine(a,b,c,alpha,beta,gamma)
+                break
+            for j in range(3):
+                coords[i,j] = float(line[j])
+        # Read in unit cell vectors
+        unit_vec = np.zeros((3,3))
+        for i in range(3):
+            line = input_.readline().split()
+            for j in range(3):
+                unit_vec[i,j] = float(line[j])
+        self.cell_vec = np.dot(coords,unit_vec)
+        # Read in the atomic positions
+        lines = input_.readlines()
+        atom_positions = []
+        atom_names = []
+        self._convention = 'Cartesian'
+        for i,line in enumerate(lines):
+            line = line.split()
+            if len(line) == 4:
+                atom_names.append(str(line.pop(-1)))
+                atom_pos = np.array( [ float(i) for i in line ] )
+                atom_pos = np.dot(coords,atom_pos)
+                atom_positions.append(atom_pos)
+            else:
+                break
+        # Sort atomic positions by atom name
+        atom_names = np.array(atom_names)
+        atom_positions = np.array(atom_positions)
+        sort_pos = np.argsort(atom_names)
+        self._atom_names = atom_names[sort_pos]
+        self.atom_positions = atom_positions[sort_pos]
+        self.num_atoms = len(self.atom_names)
+        # Determine distinct atom types
+        self.atom_type_names = []
+        self.atom_types = []
+        self.atom_type_names.append(self.atom_names[0])
+        self.atom_types.append(1)
+        self.num_atom_types = 1
+        for name in self.atom_names[1:]:
+            if name == self.atom_type_names[-1]:
+                self.atom_types[-1] += 1
+            else:
+                self.num_atom_types += 1
+                self.atom_type_names.append(name)
+                self.atom_types.append(1)
+        # Set default values for undefined UnitCell parameters
+        self._vel_convention = 'Cartesian'
+        self.atom_velocities = np.zeros_like(self.atom_positions)
 
     def read_gulp_input(self,input_):
         """

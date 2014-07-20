@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/python
 
-# calc_pot_alignment2.py v1.0 11-3-2013 Jeff Doak jeff.w.doak@gmail.com
+# calc_pot_alignment2.py v1.1 01-20-2014 Jeff Doak jeff.w.doak@gmail.com
 # Calculates the electrostatic alignment between defected and perfect-crystal
 # supercells. (This script is newer/better than calc_pot_alignment.py).
 #
@@ -9,6 +9,8 @@
 # calc_pot_alignment2.py <def dir> <host dir> <atom #> <list of atom type names>
 # calc_pot_alignment2.py <def dir> <host dir> <dummy #> <name list> <defect atom position>
 # calc_pot_alignment2.py <def dir> <host dir> <dummy #> <name list> <defect atom position> <corresponding host position>
+# calc_pot_alignment2.py <def dir> <host dir> <dummy #> <name list> <defect atom position> <corresponding host position> quiet
+# calc_pot_alignment2.py <def dir> <host dir> <dummy #> <name list> <defect atom position> <corresponding host position> switch quiet
 #
 # Here, <path to defect dir> and <path to host dir> are the relative paths from
 # the current directory to the directories containing the defect and host
@@ -24,9 +26,16 @@
 # host crystal) for the position in the host POSCAR which corresponds to the 
 # position of the defect in the defect crystal. 
 #
-# The last command is useful when the atom positions in the defect crystal have 
-# been shifted relative to the host crystal to place the defect at the origin of 
-# the defect POSCAR.
+# The fourth command is useful when the atom positions in the defect 
+# crystal have been shifted relative to the host crystal to place the defect at
+# the origin of the defect POSCAR.
+#
+# The fifth command suppresses all output except for the electrostatic potential
+# alignment. This is useful for automated calculations.
+#
+# The sixth command is rarely useful. It moves the defect atom from the bottom
+# of the list of atoms in the defect poscar or vice versa.
+# in the same order.
 
 from unitcell import *
 import re,sys
@@ -88,6 +97,19 @@ poscar.in_cell()
 poscar.scale = 1.0
 poscar.convention = "C"
 
+# Move defect atom to top of list if it isn't first and the switch flag is
+# used
+if str(sys.argv[-2]) == "switch":
+    if int(sys.argv[3]) == 1:
+        temp_pos = np.delete(poscar.atom_positions,int(sys.argv[3])-1,0)
+        temp_pos = np.insert(temp_pos,len(poscar.atom_positions)-1,poscar.atom_positions[int(sys.argv[3])-1],0)
+        poscar.atom_positions = temp_pos
+    elif int(sys.argv[3]) == len(poscar.atom_positions):
+        temp_pos = np.delete(poscar.atom_positions,int(sys.argv[3])-1,0)
+        temp_pos = np.insert(temp_pos,0,poscar.atom_positions[int(sys.argv[3])-1],0)
+        poscar.atom_positions = temp_pos
+
+
 # Read in POSCAR of neutral calculation
 perfect = UnitCell(neutralpos)
 perfect.convention = "D"
@@ -102,6 +124,18 @@ neut_center = np.dot(perfect.cell_vec.transpose(),np.array([0.5,0.5,0.5]))
 
 # Read in OUTCAR of charged calculation
 charged_pots = get_el_pots(chargedout,poscar.num_atoms)
+# Reorder electrostatic potentials if defect atom isn't the first, and the
+# switch flag is used
+if str(sys.argv[-2]) == "switch":
+    if int(sys.argv[3]) == 1:
+        temp_pots = np.delete(charged_pots,int(sys.argv[3])-1)
+        temp_pots = np.insert(temp_pots,len(charged_pots)-1,charged_pots[int(sys.argv[3])-1])
+        charged_pots = temp_pots
+    elif int(sys.argv[3]) == len(poscar.atom_positions):
+        temp_pots = np.delete(charged_pots,int(sys.argv[3])-1)
+        temp_pots = np.insert(temp_pots,0,charged_pots[int(sys.argv[3])-1])
+        charged_pots = temp_pots
+
 
 # Read in OUTCAR of neutral calculation
 neutral_pots = get_el_pots(neutralout,perfect.num_atoms)
@@ -121,16 +155,19 @@ def list_fit_2(i1,i2,list1,list2):
 # Find missing atom in defect/host cell
 insert_index = []
 if len(poscar.atom_positions)+1 == len(perfect.atom_positions):
+    # There is a vacancy defect
     for i in range(len(neutral_pots)):
         insert_index.append(list_fit(i,charged_pots,neutral_pots))
     neutral_pots = np.delete(neutral_pots,np.argsort(insert_index)[0])
     perfect.atom_positions = np.delete(perfect.atom_positions,np.argsort(insert_index)[0],0)
 elif len(poscar.atom_positions) == len(perfect.atom_positions)+1:
+    # There is an interstitial defect
     for i in range(len(charged_pots)):
         insert_index.append(list_fit(i,neutral_pots,charged_pots))
     charged_pots = np.delete(charged_pots,np.argsort(insert_index)[0])
     poscar.atom_positions = np.delete(poscar.atom_positions,np.argsort(insert_index)[0],0)
 elif len(poscar.atom_positions)+2 == len(perfect.atom_positions):
+    # There is a multi-vacancy defect
     for i in range(len(neutral_pots)-1):
         insert_index.append([])
         for j in range(i+1,len(neutral_pots)):
@@ -139,7 +176,7 @@ elif len(poscar.atom_positions)+2 == len(perfect.atom_positions):
     min_indices = np.unravel_index(min_index,(len(insert_index),len(insert_index[0])))
     #print min_indices[0]
     #print min_index,min_indices,insert_index[min_indices[0]][min_indices[1]]
-    print perfect.atom_positions[min_indices[0]]-perfect.atom_positions[min_indices[1]]
+    #print perfect.atom_positions[min_indices[0]]-perfect.atom_positions[min_indices[1]]
     neutral_pots = np.delete(neutral_pots,min_indices)
     perfect.atom_positions = np.delete(perfect.atom_positions,min_indices,0)
 
@@ -155,17 +192,21 @@ for i in range(len(radii)):
 
 # Print average electrostatic potential difference between defect and host cells
 # as a function of distance away from the defect
-sorted_radii = np.sort(radii)
-sorted_pots = [ delta_pots[i] for i in np.argsort(radii) ]
-sorted_names = [ poscar.atom_names[i] for i in np.argsort(radii) ]
-for i in range(len(sorted_radii)):
-    print sorted_radii[i],sorted_pots[i],sorted_names[i]
+if str(sys.argv[-1]) != "quiet":
+    sorted_radii = np.sort(radii)
+    sorted_pots = [ delta_pots[i] for i in np.argsort(radii) ]
+    sorted_names = [ poscar.atom_names[i] for i in np.argsort(radii) ]
+    for i in range(len(sorted_radii)):
+        print sorted_radii[i],sorted_pots[i],sorted_names[i]
 
 # Print cell-averaged electrostatic potential difference
-print ""
-print "Average over atoms outside radius",r_min,"A centered around defect"
-print "$\Delta V_{el} (eV)$ &","# atoms in average &","Std. Dev. (eV)"
-print np.mean(sphere_pots),len(sphere_pots),np.std(sphere_pots)
+if str(sys.argv[-1]) != "quiet":
+    print ""
+    print "Average over atoms outside radius",r_min,"A centered around defect"
+    print "$\Delta V_{el} (eV)$ &","# atoms in average &","Std. Dev. (eV)"
+    print np.mean(sphere_pots),len(sphere_pots),np.std(sphere_pots)
+else:
+    print np.mean(sphere_pots)
 
 exit()
 
