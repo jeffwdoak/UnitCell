@@ -210,7 +210,8 @@ class UnitCell(object):
                 print "Empty UnitCell will be returned."
                 input_ = None
         #if isinstance(input_,file):
-        else: # Assume input_ is a file
+        #else: # Assume input_ is a file
+        elif input_ is not None:
             if format_ == None:
                 self.read_poscar(input_)
             elif format_ == "lammps":
