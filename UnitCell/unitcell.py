@@ -189,6 +189,13 @@ class UnitCell(object):
     atom_names = property(get_atom_names,set_atom_names)
 
     def __init__(self, input_=None,format_=None):
+        if isinstance(input_,str):
+            try:
+                input_ = open(input_,'r')
+            except IOError:
+                print "Error reading input file."
+                print "Empty UnitCell will be returned."
+                input_ = None
         if isinstance(input_,UnitCell):
             # Return a new UnitCell object that is a copy of input_
             self.name = input_.name
@@ -202,13 +209,6 @@ class UnitCell(object):
             self._atom_names = input_.atom_names  # Will this return a copy or the reference?
             self._vel_convention = input_.vel_convention
             self.atom_velocities = np.array(input_.atom_velocities)
-        elif isinstance(input_,str):
-            try:
-                input_ = open(input_,'r')
-            except IOError:
-                print "Error reading input file."
-                print "Empty UnitCell will be returned."
-                input_ = None
         #if isinstance(input_,file):
         #else: # Assume input_ is a file
         elif input_ is not None:
