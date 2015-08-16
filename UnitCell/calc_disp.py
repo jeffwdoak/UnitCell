@@ -8,5 +8,7 @@ cell_2 = UnitCell(open(str(sys.argv[2]),'r'))
 
 #disp = displacements(cell_1,cell_2,conv='C')
 #disp = np.round(disp,decimals=9)
-mag,dir = displacements(cell_1,cell_2,conv='C',flag=True)
+mag = displacements(cell_1,cell_2,conv='C',flag=False)
+#mag,dir = displacements(cell_1,cell_2,conv='C',flag=True)
 print mag
+#print dir

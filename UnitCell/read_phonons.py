@@ -77,7 +77,7 @@ def decompose_displacements2(normal_modes,disp,masses):
     weights = 0
     for i in range(len(disp)):
         pass
-
+    pass
 
 
 def main():

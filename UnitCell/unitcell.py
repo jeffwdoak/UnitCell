@@ -139,15 +139,11 @@ class UnitCell(object):
     def set_vel_convention(self,string):
         vcees = ['c','C','k','K','\n','\t',' ']
         if not vcees.count(string[0]):  # string was Direct
-            print "found direct velocities"
-            print string
             if vcees.count(self._vel_convention[0]):  # Vel. in cartesian
                 self.atom_velocities = cart_to_direct(
                         self.cell_vec,self.atom_velocities)
                 self._vel_convention = 'Direct'
         else:  # string was Cartesian
-            print "found cartesian velocities"
-            print string
             if not vcees.count(self._vel_convention[0]):  # Vel. in direct
                 self.atom_velocities = direct_to_cart(
                         self.cell_vec,self.atom_velocities)
@@ -189,6 +185,13 @@ class UnitCell(object):
     atom_names = property(get_atom_names,set_atom_names)
 
     def __init__(self, input_=None,format_=None):
+        if isinstance(input_,str):
+            try:
+                input_ = open(input_,'r')
+            except IOError:
+                print "Error reading input file."
+                print "Empty UnitCell will be returned."
+                input_ = None
         if isinstance(input_,UnitCell):
             # Return a new UnitCell object that is a copy of input_
             self.name = input_.name
@@ -202,15 +205,9 @@ class UnitCell(object):
             self._atom_names = input_.atom_names  # Will this return a copy or the reference?
             self._vel_convention = input_.vel_convention
             self.atom_velocities = np.array(input_.atom_velocities)
-        elif isinstance(input_,str):
-            try:
-                input_ = open(input_,'r')
-            except IOError:
-                print "Error reading input file."
-                print "Empty UnitCell will be returned."
-                input_ = None
         #if isinstance(input_,file):
-        else: # Assume input_ is a file
+        #else: # Assume input_ is a file
+        elif input_ is not None:
             if format_ == None:
                 self.read_poscar(input_)
             elif format_ == "lammps":
@@ -1164,7 +1161,8 @@ def displacements(cell_1,cell_2,conv="C",flag=False):
             disp[i] = np.dot(cell_1.cell_vec.transpose(),disp[i])
         if flag == True:
             mag[i] = np.linalg.norm(disp[i])
-            uvw[i] = disp[i]/abs(gcdd(disp[i,0],disp[i,1],disp[i,2]))
+            #uvw[i] = disp[i]/abs(gcdd(disp[i,0],disp[i,1],disp[i,2]))
+            uvw[i] = disp[i]/mag[i]
     if flag == False:
         return disp
     else:
