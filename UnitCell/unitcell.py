@@ -657,6 +657,16 @@ class UnitCell(object):
                 self._atom_names.append(str(line[3]))
             else:
                 self._atom_names.append(None)
+        # If this is a vasp5-formatted file, and there were no atom names given
+        # at the end of the atomic position lines, use the vasp5 atom-type names
+        # to populate the atom names list
+        if vasp5:
+            if all([ i == None for i in self._atom_names ]):
+                n = 0
+                for i in range(self.num_atom_types):
+                    for j in range(self.atom_types[i]):
+                        self._atom_names[n] = self._atom_type_names[i]
+                        n += 1
         # Check for MD velocities.
         self.atom_velocities = np.zeros((self.num_atoms,3))
         line = input_.readline()
