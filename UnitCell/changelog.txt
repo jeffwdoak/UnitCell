@@ -1,0 +1,76 @@
+UnitCell Class v2.0.0 Jeff Doak jeff.w.doak@gmail.com 09-26-2013
+Changelog:
+v2.0.0 - Added read_atat method.
+v1.9.8 - Added add_atom method. May be a bug in this method!
+       - Added delete_atom method.
+       - Added change_atom_type method.
+v1.9.7 - Fixed bugs in shift method.
+       - Fixed bugs in in_cell method.
+       - Added get_volume method.
+v1.9.6 - Removed CHGCAR methods. These now work with a separate class,
+         ChargeDensity
+v1.9.5 - Added Gulp input file input method. Currently only supports 'cell'
+         format, not 'vector' format.
+v1.9.3 - Added velocity flag to read_poscar method. With vel=True (default)
+         atom velocities will be read in. With vel=False, atom velocities will
+         be ignored. Useful for using read_poscar to read in the atomic
+         position portion of a CHGCAR-like file.
+       - Added read_chgcar method to read in a CHGCAR-like file. Assumes the
+         atomic positions have already been read in.
+v1.9.2 - Added method to perform a linear transformation on a unit cell. This
+         transformation alters the unit cell vectors, while leaving fractional
+         atomic positions unchanged.
+       - Fixed bug in read_poscar method where velocity attibutes were not
+         created if no velocities were present in the poscar file.
+       - Fixed bug in __init__ where self.atom_names was spelled incorrectly.
+v1.9.1 - Added (untested) section to __init__ to return a new UnitCell object
+         that is a copy of of a UnitCell object given as input_.
+       - Added instance method simple_supercell which takes three integers and
+         creates a supercell of the unit cell that is a*cell_vec[0],
+         b*cell_vec[1], and c*cell_vec[2] in size, and with the approriate
+         increase in number of atoms. This method is unfinshed!
+v1.9.0 - Added flag to displacement function to allow displacements to be
+         calculated in direct or cartesian coordinates. 
+       - Replaced list comprehension with re.search in the spacegroup method. 
+         Spacegroup method now removes the findsym.log file if findsym runs 
+         correctly.
+       - Reworked how conversion between direct and cartesian coordinates
+         happens. Made two package functions direct_to_cart and cart_to_direct,
+         which multiply a lattice and array together to convert the array from
+         direct to cart. coords. or vice versa. Changed the setter method for
+         self.convention to use these functions instead of the to_direct and
+         to_cart methods. 
+       - The read_poscar method now supports inputting MD velocities from the
+         POSCAR file. Created two new attributes, _vel_convention and
+         atom_velocities, which are analogous to the convention and
+         atom_positions attributes that currently exist. Added getter and setter
+         methods for the _vel_convention attribute.
+       - The output_vasp method now outputs MD velocities, if they are non-zero.
+v1.8   - Added method to read in gulp output file. Unit cell data can be read in
+         either from the final relaxed positions, or the initial positions.
+       - Modified output_ezvasp to only return a string, the user can deal with
+         appending the structure to an ezvasp file. 
+       - Added a function to convert a,b,c,alpha,beta,gamma to unit cell vectors
+         (not a class method, but a package function).
+       - Removed old commented out getters and setters.
+       - Commented out supercell method because it doesn't work as of now.
+v1.7   - Added method to move all atoms to their positions inside the unit 
+         cell, if they aren't already there. 
+       - Added a method to calculate the center of mass of a unit cell, reading
+         the masses from a POTCAR-formatted file.
+       - Fixed bug in set_convetion method where to_cart was named incorrectly.
+v1.6   - Added method to output ezvasp-formatted text or append to vasp.in file.
+       - Added get and set methods for changing the atom names. The variable
+         num_atom_types and atom_types can be broken by these methods still.
+       - Added method to change scale of unit cell in a way that does change the
+         lattice parameter and volume.
+v1.5   - Added method to calculate spacegroup using ISOTROPY package.
+       - Changed class method displacements to a function in unitcell package.
+v1.4   - Removed unneeded getters ans setters. Made remaining ones compatible
+         with python 2.4.3. 
+       - Edited displacement class method to return values instead of printing 
+         them, and added a second return format.
+v1.3   - Made class an extension of object; added getter and setter methods for
+         most attributes.
+v1.2   - Added shift method to shift atom positions by a constant vector.
+v1.1   - Added LAMMPS output method. Currently only supports orthogonal cells!
