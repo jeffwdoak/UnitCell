@@ -1,7 +1,12 @@
 #!/usr/bin/python
 
 """
-UnitCell Class v2.0.0 Jeff Doak jeff.w.doak@gmail.com
+UnitCell v2.0.0 Jeff W. Doak jeff.w.doak@gmail.com
+
+Class to read in, store, and manipulate crystallographic unit cell data.
+
+This class is used in a variety of other classes that manipulate VASP input and
+output files to parse the unit cell associated with a VASP calculation.
 
 """
 
@@ -15,6 +20,42 @@ import numpy as np
 class UnitCell(object):
     """
     Class to read in and store crystal unit cell data.
+
+    Attributes
+    ----------
+    name : str
+        Name of calculation/unitcell
+    scale : float
+        Scale factor for unit cell vectors and atomic positions.
+    cell_vec : numpy array
+        Array of unit cell vectors.
+        np.shape(cell_vec) == (3, 3)
+    num_atom_types : int
+        Number of different atomic species in the unit cell.
+    atom_types : list
+        List of the number of atoms of each type.
+        len(atom_types) == num_atom_types
+    convention : str
+        String indicating whether atomic positions are described in cartesian
+        coordinates ('c', 'C', 'k', 'K', 'Cartesian') or in terms of the unit
+        cell vectors ('d', 'D', 'Direct').
+    num_atoms : int
+        Total number of atoms in the unitcell.
+    atom_positions : numpy array
+        Array of the positions of each atom, in units specified by
+        `convention`.
+        np.shape(atom_positions) == (num_atoms, 3)
+    atom_names : list
+        List of atomic symbols for each atom in the unitcell
+        len(atom_names) == num_atoms
+    vel_convention : str
+        String indicating whether atomic velocities are described in cartesian
+        coordinates ('c', 'C', 'k', 'K', 'Cartesian') or in terms of the unit
+        cell vectors ('d', 'D', 'Direct').
+    atom_velocities : numpy array
+        Array of the velocities of each atom, in units specified by
+        `vel_convention`.
+        np.shape(atom_velocities) == (num_atoms, 3)
 
     """
 
@@ -49,18 +90,26 @@ class UnitCell(object):
         return self._convention
 
     def set_convention(self, string):
+        """
+        Set the convention used to store atomic positions.
+
+        Only the first character in `string` is used to determine convetion. 
+        'C', 'c', 'K', or 'k' indicate that atomic positions are stored in
+        Cartesian coordiates. Anything else is stored in direct coordinates.
+        
+        """
         cees = ['c', 'C', 'k', 'K']
         if not cees.count(string[0]):  # string was a form of Direct
             if cees.count(self._convention[0]):  # Atoms in cartesian
                 #self.to_direct()
                 self.atom_positions = cart_to_direct(
-                        self.cell_vec, self.atom_positions)
+                    self.cell_vec, self.atom_positions)
                 self._convention = 'Direct'
         else:  # string was a form of Cartesian
             if not cees.count(self._convention[0]):  # Atoms in direct
                 #self.to_cart()
                 self.atom_positions = direct_to_cart(
-                        self.cell_vec, self.atom_positions)
+                    self.cell_vec, self.atom_positions)
                 self._convention = 'Cartesian'
 
     def get_vel_convention(self):
@@ -78,12 +127,12 @@ class UnitCell(object):
         if not vcees.count(string[0]):  # string was Direct
             if vcees.count(self._vel_convention[0]):  # Vel. in cartesian
                 self.atom_velocities = cart_to_direct(
-                        self.cell_vec, self.atom_velocities)
+                    self.cell_vec, self.atom_velocities)
                 self._vel_convention = 'Direct'
         else:  # string was Cartesian
             if not vcees.count(self._vel_convention[0]):  # Vel. in direct
                 self.atom_velocities = direct_to_cart(
-                        self.cell_vec, self.atom_velocities)
+                    self.cell_vec, self.atom_velocities)
                 self._vel_convention = 'Cartesian'
 
     def get_atom_names(self):
@@ -122,7 +171,7 @@ class UnitCell(object):
     vel_convention = property(get_vel_convention, set_vel_convention)
     atom_names = property(get_atom_names, set_atom_names)
 
-    def __init__(self,  input_=None, format_=None):
+    def __init__(self, input_=None, format_=None):
         if isinstance(input_, str):
             try:
                 input_ = open(input_, 'r')
@@ -156,18 +205,18 @@ class UnitCell(object):
                 self.read_gulp_input(input_)
             elif format_ == "atat":
                 self.read_atat(input_)
-            elif format_ == "chgcar":
-                self.read_poscar(input_, vel=False)
-                self.read_chgcar(input_)
-                self.scale_density()
-            elif format_ == "locpot":
-                self.read_poscar(input_, vel=False)
-                self.read_chgcar(input_)
+            #elif format_ == "chgcar":
+            #    self.read_poscar(input_, vel=False)
+            #    self.read_chgcar(input_)
+            #    self.scale_density()
+            #elif format_ == "locpot":
+            #    self.read_poscar(input_, vel=False)
+            #    self.read_chgcar(input_)
             else:
                 print "Unknown format."
                 print "Empty UnitCell will be returned."
                 input_ = None
-        if input_ == None:
+        if input_ is None:
             # Create 'empty' simple cubic unit cell as default.
             self.name = ""
             self._scale = 1.0
@@ -253,7 +302,7 @@ class UnitCell(object):
         self.scale = temp
         return vol
 
-    def add_atom(self, pos, type, convention, vel=np.zeros(3)):
+    def add_atom(self, pos, type_, convention, vel=np.zeros(3)):
         """
         Adds an atom of a given type to the unitcell at a position specified in
         either direct or cartesian coordinates. Optionally, a velocity for the
@@ -269,30 +318,30 @@ class UnitCell(object):
             """
             seen = set()
             seen_add = seen.add
-            return [ x for x in list_ if x not in seen and not seen_add(x) ]
+            return [x for x in list_ if x not in seen and not seen_add(x)]
 
         self.convention = convention
         self.num_atoms += 1
         pos = np.array([pos])
         vel = np.array([vel])
         try:
-            # check if type is an integer
-            int(type)
+            # check if type_ is an integer
+            int(type_)
         except ValueError:
             # type is a string
-            name = type
+            name = type_
             if name in self.atom_names:
                 name_list = uniq(self.atom_names)
                 for i in range(len(name_list)):
                     if name_list[i] == name:
-                        type = i
+                        type_ = i
                 loc = 0
-                for i in range(0, type+1):
+                for i in range(0, type_+1):
                     loc += self.atom_types[i]
                 self.atom_positions = np.insert(self.atom_positions, loc, pos, 0)
                 self.atom_velocities = np.insert(self.atom_velocities, loc, vel, 0)
                 self.atom_names.insert(loc, name)
-                self.atom_types[type] += 1
+                self.atom_types[type_] += 1
             else:
                 self.atom_positions = np.append(self.atom_positions, pos, 0)
                 self.atom_velocities = np.append(self.atom_velocities, vel, 0)
@@ -300,15 +349,15 @@ class UnitCell(object):
                 self.atom_names.append(name)
                 self.atom_types.append(1)
         else:
-            # type is an integer
-            if type < self.num_atom_types:
+            # type_ is an integer
+            if type_ < self.num_atom_types:
                 loc = 0
-                for i in range(0, type+1):
+                for i in range(0, type_+1):
                     loc += self.atom_types[i]
                 self.atom_positions = np.insert(self.atom_positions, loc, pos, 0)
                 self.atom_velocities = np.insert(self.atom_velocities, loc, vel, 0)
                 self.atom_names.insert(loc, self.atom_names[loc])
-                self.atom_types[type] += 1
+                self.atom_types[type_] += 1
             else:
                 self.atom_positions = np.append(self.atom_positions, pos, 0)
                 self.atom_velocities = np.append(self.atom_velocities, vel, 0)
@@ -387,12 +436,14 @@ class UnitCell(object):
     def simple_supercell(self, a, b, c):
         """
         Creates a supercell of the unit cell with lattice vectors scaled by the
-        three integers a, b, and c. If a, b, or c, are not integers, they are 
+        three integers a, b, and c. If a, b, or c, are not integers, they are
         rounded to the nearest whole number.
 
         """
-        a = int(round(a)); b = int(round(b)); c = int(round(c))
-        self.convetion = "Direct"
+        a = int(round(a))
+        b = int(round(b))
+        c = int(round(c))
+        self.convention = "Direct"
         list_ = np.array([a, b, c])
         # Create new lattice vectors
         self.cell_vec = (list_*self.cell_vec.transpose()).transpose()
@@ -421,7 +472,7 @@ class UnitCell(object):
         self.atom_types = []
         for i in range(self.num_atom_types):
             self.atom_types.append(
-                    self._atom_names.count(list(set(self._atom_names))[i]))
+                self._atom_names.count(list(set(self._atom_names))[i]))
 
     def supercell(self, matrix):
         """
@@ -448,7 +499,7 @@ class UnitCell(object):
     def recip_lat(self):
         """
         Calculates the reciprocal lattice vectors of the unit cell vectors.
-        The vectors are returned as rows of a numpy array. The factor of 2*pi 
+        The vectors are returned as rows of a numpy array. The factor of 2*pi
         is included in the reciprocal vectors.
 
         """
@@ -503,7 +554,7 @@ class UnitCell(object):
         spacegroup can be returned as the International Tables number, the
         Hermann-Mauguin symbol, the Schoenflies symbol, or all three (default).
         If the input argument is not None, then variations on "Number",
-        "Schoenflies", and "Hermann-Mauguin" will return the corresponding 
+        "Schoenflies", and "Hermann-Mauguin" will return the corresponding
         symbols.
 
         """
@@ -534,11 +585,11 @@ class UnitCell(object):
         if ["Number", "number", "N", "n"].count(format_):
             return number
         elif ["Schoenflies", "schoenflies", "schoen", "flies", "Sch", "sch",
-                "S", "s"].count(format_):
+              "S", "s"].count(format_):
             return schoenflies
         elif ["Hermann-Mauguin", "hermann-mauguin", "hermann_mauguin",
-                "hermannmauguin", "Hermann_Mauguin", "HermannMauguin", "H-M", "h-m",
-                "HM", "hm", "H", "h", "M", "m"].count(format_):
+              "hermannmauguin", "Hermann_Mauguin", "HermannMauguin", "H-M", "h-m",
+              "HM", "hm", "H", "h", "M", "m"].count(format_):
             return hermann_mauguin
         else:
             return full
@@ -618,7 +669,7 @@ class UnitCell(object):
         # at the end of the atomic position lines, use the vasp5 atom-type names
         # to populate the atom names list
         if vasp5:
-            if all([ i == None for i in self._atom_names ]):
+            if all([i is None for i in self._atom_names]):
                 n = 0
                 for i in range(self.num_atom_types):
                     for j in range(self.atom_types[i]):
@@ -627,7 +678,7 @@ class UnitCell(object):
         # Check for MD velocities.
         self.atom_velocities = np.zeros((self.num_atoms, 3))
         line = input_.readline()
-        if vel == True and line:
+        if vel and line:
             # Assume there are velocities if file continues after atoms.
             if ['C', 'c', 'K', 'k', '\n', '\t', ' '].count(line[0]):
                 self._vel_convention = 'Cartesian'
@@ -666,10 +717,10 @@ class UnitCell(object):
             # Check if coordinate system is given as 3x3 vectors
             # or a, b, c, alpha, beta, gamma
             if len(line) == 6:
-                a = float(line[0]) 
-                b = float(line[1]) 
+                a = float(line[0])
+                b = float(line[1])
                 c = float(line[2])
-                alpha = float(line[3]) 
+                alpha = float(line[3])
                 beta = float(line[4])
                 gamma = float(line[5])
                 coords = six_to_nine(a, b, c, alpha, beta, gamma)
@@ -692,7 +743,7 @@ class UnitCell(object):
             line = line.split()
             if len(line) == 4:
                 atom_names.append(str(line.pop(-1)))
-                atom_pos = np.array( [ float(i) for i in line ] )
+                atom_pos = np.array([float(i) for i in line])
                 atom_pos = np.dot(coords, atom_pos)
                 atom_positions.append(atom_pos)
             else:
@@ -777,13 +828,13 @@ class UnitCell(object):
             reg_beta = re.compile(r"beta *= *([0-9]*[.][0-9]*)")
             reg_gamma = re.compile(r"gamma *= *([0-9]*[.][0-9]*)")
             reg_start = re.compile(
-               r"Label *\(Frac\) *\(Frac\) *\(Frac\) *\(e\) *\(Frac\) *\n-*\n")
+                r"Label *\(Frac\) *\(Frac\) *\(Frac\) *\(e\) *\(Frac\) *\n-*\n")
             reg_stop = re.compile(r"-*\n*\**\n\* *General input information")
             self.name = "Gulp Output Initial Geometry\n"
         # Input unit cell vectors.
-        a  = float(reg_a.search(lines).group(1))
-        b  = float(reg_b.search(lines).group(1))
-        c  = float(reg_c.search(lines).group(1))
+        a = float(reg_a.search(lines).group(1))
+        b = float(reg_b.search(lines).group(1))
+        c = float(reg_c.search(lines).group(1))
         alpha = float(reg_alpha.search(lines).group(1))
         beta = float(reg_beta.search(lines).group(1))
         gamma = float(reg_gamma.search(lines).group(1))
@@ -814,7 +865,7 @@ class UnitCell(object):
         self.atom_types = []
         for i in range(self.num_atom_types):
             self.atom_types.append(
-                    self._atom_names.count(list(set(self._atom_names))[i]))
+                self._atom_names.count(list(set(self._atom_names))[i]))
         self._vel_convention = 'Direct'
         self.atom_velocities = np.zeros((self.num_atoms, 3))
 
@@ -824,6 +875,7 @@ class UnitCell(object):
         #   - MD velocities
         """
         Read LAMMPS dump file in to grab the last set of atomic coordinates.
+
         """
         self.name = "LAMMPS Dump file.\n"
         self._scale = float(1.0)
@@ -845,9 +897,10 @@ class UnitCell(object):
         self.atom_positions = np.zeros((self.num_atoms, 3))
         self._atom_names = []
         self._convention = "Direct"
-        flag = False; j = 0
+        flag = False
+        j = 0
         for i in range(len(lines)):
-            if flag == True:
+            if flag:
                 self._atom_names.append(lines[i].split()[1])
                 self.atom_positions[j, 0] = float(lines[i].split()[2])
                 self.atom_positions[j, 1] = float(lines[i].split()[3])
@@ -862,7 +915,7 @@ class UnitCell(object):
         self.atom_types = []
         for i in range(self.num_atom_types):
             self.atom_types.append(
-                    self._atom_names.count(list(set(self._atom_names))[i]))
+                self._atom_names.count(list(set(self._atom_names))[i]))
         # Currently does not read in atomic velocities
         self._vel_convention = 'Direct'
         self.atom_velocities = np.zeros((self.num_atoms, 3))
@@ -995,7 +1048,8 @@ class UnitCell(object):
         output += "0 "+str(c)+" zlo zhi\n\n"
         # Output atomic types and positions
         output += "Atoms\n\n"
-        j=0; n=1
+        j = 0
+        n = 1
         for i in range(self.num_atoms):
             if j >= self.atom_types[n-1]:
                 n += 1
@@ -1046,23 +1100,56 @@ class UnitCell(object):
             output += "\n"
         return output
 
-def cart_to_direct(lattice, property):
+def cart_to_direct(lattice, property_):
     """
-    Converts the 1- or 2-D array property from cartesian to direct coordinates
-    using the 3x3 array lattice. The inputs lattice and property are both
-    assumed to be numpy arrays. Property is assumed to be an Nx3 array
-    containing N vectors in cartesian coordinates.
-    """
-    return np.dot(property, np.linalg.inv(lattice))
+    Convert array from cartesian to direct coordinates.
 
-def direct_to_cart(lattice, property):
+    Converts the 1- or 2-D array `property_` from cartesian to direct
+    coordinates using the 3x3 array `lattice`.
+
+    Parameters
+    ----------
+    lattice : numpy array
+        Array containing the lattice vectors of a unit cell.
+    property_ : numpy array
+        Array containing some number of 3-dimensional vectors in cartesian
+        coordinates.
+        [len(property_[i]) == 3 for i in range(len(property_))]
+
+    Returns
+    -------
+    direct_property : numpy array
+        Array containing entries in `property_` converted to direct coordinates.
+        np.shape(direct_property) == np.shape(property_)
+
     """
-    Converts the 1- or 2-D array property from direct to cartesian coordinates
-    using the 3x3 array lattice. The inputs lattice and property are both
-    assumed to be numpy arrays. Property is assumed to be an Nx3 array
-    containing N vectors in direct coordinates.
+    return np.dot(property_, np.linalg.inv(lattice))
+
+def direct_to_cart(lattice, property_):
     """
-    return np.dot(property, lattice)
+    Convert array from direct to cartesian coordinates.
+
+    Converts the 1- or 2-D array `property_` from direct to cartesian
+    coordinates using the 3x3 array `lattice`.
+
+    Parameters
+    ----------
+    lattice : numpy array
+        Array containing the lattice vectors of a unit cell.
+    property_ : numpy array
+        Array containing some number of 3-dimensional vectors in direct
+        coordinates.
+        [len(property_[i]) == 3 for i in range(len(property_))]
+
+    Returns
+    -------
+    cartesian_property : numpy array
+        Array containing entries in `property_` converted to cartesian
+        coordinates.
+        np.shape(direct_property) == np.shape(property_)
+
+    """
+    return np.dot(property_, lattice)
 
 def six_to_nine(a, b, c, alpha, beta, gamma):
     """
@@ -1077,8 +1164,9 @@ def six_to_nine(a, b, c, alpha, beta, gamma):
     lat[1, :] = np.array([b*np.cos(gamma), b*np.sin(gamma), 0])
     lat[2, 0] = c*np.cos(beta)
     lat[2, 1] = c*(np.cos(alpha)-np.cos(beta)*np.cos(gamma))/np.sin(gamma)
-    lat[2, 2] = c*np.sqrt(1-(np.cos(alpha)**2 + np.cos(beta)**2 
-                - 2*np.cos(alpha)*np.cos(beta)*np.cos(gamma))/np.sin(gamma)**2)
+    lat[2, 2] = c*np.sqrt(1 - (np.cos(alpha)**2 + np.cos(beta)**2
+                               - 2*np.cos(alpha)*np.cos(beta)*np.cos(gamma)
+                              )/np.sin(gamma)**2)
     lat = np.round(lat, decimals=8)
     return lat
 
@@ -1094,7 +1182,7 @@ def displacements(cell_1, cell_2, conv="C", flag=False):
         """
         Calculate the greatest common divisor of 2 numbers.
         """
-        while b !=0:
+        while b != 0:
             (a, b) = (b, a%b)
         return a
 
@@ -1119,22 +1207,22 @@ def displacements(cell_1, cell_2, conv="C", flag=False):
     cell_1.scale = 1.0
     cell_2.scale = 1.0
     disp = np.zeros((atoms, 3))
-    if flag == True:
+    if flag:
         mag = np.zeros(atoms)
         uvw = np.zeros((atoms, 3))
     for i in range(atoms):
         disp[i] = cell_2.atom_positions[i] - cell_1.atom_positions[i]
         for j in range(3):
             if disp[i, j] > 0.5:
-                disp[i, j] = (cell_2.atom_positions[i, j] - 1 -
-                cell_1.atom_positions[i, j])
+                disp[i, j] = (cell_2.atom_positions[i, j] - 1
+                              - cell_1.atom_positions[i, j])
         if cees.count(conv[0]):
             disp[i] = np.dot(cell_1.cell_vec.transpose(), disp[i])
-        if flag == True:
+        if flag:
             mag[i] = np.linalg.norm(disp[i])
             #uvw[i] = disp[i]/abs(gcdd(disp[i, 0], disp[i, 1], disp[i, 2]))
             uvw[i] = disp[i]/mag[i]
-    if flag == False:
+    if not flag:
         return disp
     else:
         return mag, uvw
