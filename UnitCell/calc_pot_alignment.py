@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-calc_pot_alignment2.py v1.1 01-20-2014 Jeff Doak jeff.w.doak@gmail.com
+calc_pot_alignment.py Jeff Doak jeff.w.doak@gmail.com
 Calculates the electrostatic alignment between defected and perfect-crystal
 supercells. (This script is newer/better than calc_pot_alignment.py).
 
