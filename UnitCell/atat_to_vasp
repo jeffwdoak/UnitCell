@@ -1,9 +1,16 @@
-#!/usr/bin/python
-from unitcell import *
+#!/usr/bin/env python
+
+"""
+Script to convert a unitcell in ATAT file format to VASP4 file format.
+
+"""
+
 import sys
 
-file = sys.argv[1]
-cell_file = open(file,'r')
-cell = UnitCell(cell_file,"atat")
+from unitcell import UnitCell
+
+file_ = sys.argv[1]
+with open(file_, 'r') as cell_file:
+    cell = UnitCell(cell_file, "atat")
 vasp = cell.output_vasp()
 print vasp
