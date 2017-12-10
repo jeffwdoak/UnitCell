@@ -1,11 +1,17 @@
 #!/usr/bin/env python
 
-# band_filling_correction.py v1.0 6-12-2013 Jeff Doak jeff.w.doak@gmail.com
-# Calculates the band-filling correction for a defect
+"""
+band_filling_correction.py v1.0 Jeff Doak jeff.w.doak@gmail.com
+Calculates the band-filling correction for a defect
+
+"""
+
+import re
+import sys
+
+import numpy as np
 
 from unitcell import *
-import re,sys
-import numpy as np
 
 # 1st argument is directory containing defect calculation
 # 2nd argument is directory containing reference calculation
@@ -13,10 +19,8 @@ import numpy as np
 ref_out = str(sys.argv[2])+"OUTCAR"
 
 # Read in OUTCAR of defect calculation
-def_out = open(str(sys.argv[1])+"OUTCAR","r")
-#lines = def_out.readlines()
-lines = def_out.read()
-def_out.close()
+with open(str(sys.argv[1])+'OUTCAR', 'r') as def_out:
+    lines = def_out.read()
 def_kpts = []
 def_weights = []
 def_energies = []
@@ -24,6 +28,7 @@ def_occupancies = []
 kpt_reg = re.compile(r" *kpoint *[0-9] *: [0-9]*[.][0-9]* *[0-9]*[.][0-9]* *[0-9][.][0-9]*")
 print kpt_reg.findall(lines)
 exit()
+
 for i in range(len(lines)):
     if lines[i].startswith("  (the norm of the test charge is"):
         j = 1
