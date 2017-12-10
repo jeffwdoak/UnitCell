@@ -1,10 +1,21 @@
 #!/usr/bin/env python
 
-# kmesh.py v1.0 9-23-2013 Jeff Doak jeff.w.doak@gmail.com
+"""
+kmesh.py Jeff Doak jeff.w.doak@gmail.com
 
-from unitcell import *
+Calculate the k-point mesh along reciprocal lattice vectors that will give a
+specified k-points per reciprocal atom (KPPRA).
+
+Does not account for offset of origin of k-point mesh.
+Does not try to keep mesh dimensions even or odd.
+
+"""
+
 import sys
+
 import numpy as np
+
+from unitcell import UnitCell
 
 # Read in crystal structure and desired kppra
 if len(sys.argv) > 2:
@@ -25,9 +36,6 @@ b1 = 1.0
 
 # Determine scale factor which will give desired KPPRA
 scale = 1
-#kx = np.floor(scale*b1)
-#ky = np.floor(scale*b2)
-#kz = np.floor(scale*b3)
 while True:
     kx = int(np.floor(scale*b1))
     ky = int(np.floor(scale*b2))
@@ -36,6 +44,7 @@ while True:
     if kppra >= KPPRA:
         break
     scale += 1
+
 # Output K-point mesh that gives desired KPPRA
-print kx,ky,kz
+print kx, ky, kz
 sys.exit()
