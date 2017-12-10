@@ -6,14 +6,14 @@ Calculates the electrostatic alignment between defected and perfect-crystal
 supercells. (This script is newer/better than calc_pot_alignment.py).
 
 Possible command line options:
- calc_pot_alignment2.py <path to defect dir> <path to host dir> <atom #>
- calc_pot_alignment2.py <def dir> <host dir> <atom #> <list of atom type names>
- calc_pot_alignment2.py <def dir> <host dir> <dummy #> <name list> <defect atom position>
- calc_pot_alignment2.py <def dir> <host dir> <dummy #> <name list>
+ calc_pot_alignment.py <path to defect dir> <path to host dir> <atom #>
+ calc_pot_alignment.py <def dir> <host dir> <atom #> <list of atom type names>
+ calc_pot_alignment.py <def dir> <host dir> <dummy #> <name list> <defect atom position>
+ calc_pot_alignment.py <def dir> <host dir> <dummy #> <name list>
                         <defect atom position> <corresponding host position>
- calc_pot_alignment2.py <def dir> <host dir> <dummy #> <name list>
+ calc_pot_alignment.py <def dir> <host dir> <dummy #> <name list>
                         <defect atom position> <corresponding host position> quiet
- calc_pot_alignment2.py <def dir> <host dir> <dummy #> <name list>
+ calc_pot_alignment.py <def dir> <host dir> <dummy #> <name list>
                         <defect atom position> <corresponding host position> switch quiet
 
 Here, <path to defect dir> and <path to host dir> are the relative paths from
