@@ -205,9 +205,8 @@ class UnitCell(object):
               1. 'vasp'
               2. 'lammps'
               3. 'gulp_output'
-              4. 'gulp_input'
-              5. 'atat'
-              6. None (default)
+              4. 'atat'
+              5. None (default)
             If format_ is None, the input format will be assumed to be vasp.
             If a string other than one above is given, an empty UnitCell object
             will be created.
@@ -242,17 +241,8 @@ class UnitCell(object):
                 self.read_lammps_dump(input_)
             elif format_ == "gulp_output":
                 self.read_gulp_output(input_)
-            elif format_ == "gulp_input":
-                self.read_gulp_input(input_)
             elif format_ == "atat":
                 self.read_atat(input_)
-            #elif format_ == "chgcar":
-            #    self.read_poscar(input_, vel=False)
-            #    self.read_chgcar(input_)
-            #    self.scale_density()
-            #elif format_ == "locpot":
-            #    self.read_poscar(input_, vel=False)
-            #    self.read_chgcar(input_)
             else:
                 print "Unknown format."
                 print "Empty UnitCell will be returned."
@@ -541,28 +531,6 @@ class UnitCell(object):
             self.atom_types.append(
                 self._atom_names.count(list(set(self._atom_names))[i]))
 
-    def supercell(self, matrix):
-        """
-        Creates a supercell of the unit cell with lattice vectors scaled by
-        matrix. Atoms are then populated in the supercell according to the
-        continued lattice. Matrix can either be a 3x3 or 1x3 array-like
-        object.
-
-        """
-        # Next three lines are probably unneccessary as long as matrix can be
-        # turned into a numpy array.
-        #if isinstance(matrix, np.ndarray):
-        #    matrix = matrix.flatten()
-        #else:
-        matrix = np.array(matrix).flatten()
-        # Check if matrix has only 3 entries, and if so, convert it to the full
-        # matrix required in the general case.
-        if len(matrix) == 3:
-            temp = np.identity(3)
-            for i in range(3):
-                temp[i, i] = matrix[i]
-            matrix = temp.flatten()
-
     def recip_lat(self):
         """
         Calculates the reciprocal lattice vectors of the unit cell vectors.
@@ -684,7 +652,6 @@ class UnitCell(object):
         #   - Magnetic Moments
         #   - DFT+U (does that show up in POSCAR/INCAR for each atom?)
         #   - Selective dynamics
-        #   - Vasp 5
         """
         Read in unit cell data from a POSCAR like file line by line.
 
@@ -763,13 +730,6 @@ class UnitCell(object):
             self.atom_velocities = np.zeros((self.num_atoms, 3))
         #input_.close()
 
-    def read_ezvasp(self, input_):
-        """
-        Read in unit cell information from an ezvasp-formatted file.
-
-        """
-        pass
-
     def read_atat(self, input_):
         """
         Read in unit cell information from an ATAT-formatted file.
@@ -838,28 +798,6 @@ class UnitCell(object):
         # Set default values for undefined UnitCell parameters
         self._vel_convention = 'Cartesian'
         self.atom_velocities = np.zeros_like(self.atom_positions)
-
-    def read_gulp_input(self, input_):
-        """
-        Read in unit cell information from a gulp input-formatted file.
-
-        """
-        pass
-        #input_.readline()  # Discard line containing calculations to run.
-        #line = input_.readline()
-        #if line.split
-        lines = input_.read()
-        for i, line in enumerate(lines):
-            if line.startswith("cell"):
-                a = float(lines[i+1].split()[0])
-                b = float(lines[i+1].split()[1])
-                c = float(lines[i+1].split()[2])
-                alpha = float(lines[i+1].split()[0])
-                beta = float(lines[i+1].split()[0])
-                gamma = float(lines[i+1].split()[0])
-                self.cell_vec = six_to_nine(a, b, c, alpha, beta, gamma)
-            elif line.startswith("frac"):
-                pass
 
     def read_gulp_output(self, input_, top=False):
         """
