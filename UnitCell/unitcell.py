@@ -81,10 +81,11 @@ class UnitCell(object):
 
     def get_convention(self):
         """
-        The convention used to store atomic positions. Only the first character
-        in the string is used to determine convetion. C, c, K, or k indicate
-        that atomic positions are stored in Cartesian coordiates. Anything else
-        is stored in direct coordinates.
+        Set the convention used to store atomic positions.
+
+        Only the first character in `string` is used to determine convetion.
+        'C', 'c', 'K', or 'k' indicate that atomic positions are stored in
+        Cartesian coordiates. Anything else is stored in direct coordinates.
 
         """
         return self._convention
@@ -93,10 +94,10 @@ class UnitCell(object):
         """
         Set the convention used to store atomic positions.
 
-        Only the first character in `string` is used to determine convetion. 
+        Only the first character in `string` is used to determine convetion.
         'C', 'c', 'K', or 'k' indicate that atomic positions are stored in
         Cartesian coordiates. Anything else is stored in direct coordinates.
-        
+
         """
         cees = ['c', 'C', 'k', 'K']
         if not cees.count(string[0]):  # string was a form of Direct
@@ -114,15 +115,24 @@ class UnitCell(object):
 
     def get_vel_convention(self):
         """
-        The convention used to store atomic velocities. Only the first character
-        in the string is used to determine convetion. C, c, K, or k indicate
-        that atomic positions are stored in Cartesian coordiates. Anything else
-        is stored in direct coordinates.
+        Get the convention used to store atomic velocities.
+
+        Only the first character in the string is used to determine convetion.
+        C, c, K, or k indicate that atomic positions are stored in Cartesian
+        coordiates. Anything else is stored in direct coordinates.
 
         """
         return self._vel_convention
 
     def set_vel_convention(self, string):
+        """
+        Set the convention used to store atomic velocities.
+
+        Only the first character in the string is used to determine convetion.
+        C, c, K, or k indicate that atomic positions are stored in Cartesian
+        coordiates. Anything else is stored in direct coordinates.
+
+        """
         vcees = ['c', 'C', 'k', 'K', '\n', '\t', ' ']
         if not vcees.count(string[0]):  # string was Direct
             if vcees.count(self._vel_convention[0]):  # Vel. in cartesian
@@ -136,6 +146,10 @@ class UnitCell(object):
                 self._vel_convention = 'Cartesian'
 
     def get_atom_names(self):
+        """
+        Get the list of atomic names.
+
+        """
         return self._atom_names
 
     def set_atom_names(self, list_):
@@ -172,6 +186,33 @@ class UnitCell(object):
     atom_names = property(get_atom_names, set_atom_names)
 
     def __init__(self, input_=None, format_=None):
+        """
+        Create a new UnitCell object.
+
+        Parameters
+        ----------
+        input_ : varied, optional
+            Input data from which to create a UnitCell. `input_` can be
+              1. a string specifiying the path to a file containing the unitcell
+                 data,
+              2. a file object containing the unitcell data,
+              3. a UnitCell object to copy, or
+              4. None, in which case an empty UnitCell will be created.
+            Defaults to None.
+        format_ : str, optional
+            String specifying the format of the data in `input_`.
+            Allowed options for `format_` are:
+              1. 'vasp'
+              2. 'lammps'
+              3. 'gulp_output'
+              4. 'gulp_input'
+              5. 'atat'
+              6. None (default)
+            If format_ is None, the input format will be assumed to be vasp.
+            If a string other than one above is given, an empty UnitCell object
+            will be created.
+
+        """
         if isinstance(input_, str):
             try:
                 input_ = open(input_, 'r')
@@ -195,7 +236,7 @@ class UnitCell(object):
         #if isinstance(input_, file):
         #else: # Assume input_ is a file
         elif input_ is not None:
-            if format_ == None:
+            if format_ is None or format_ == 'vasp':
                 self.read_poscar(input_)
             elif format_ == "lammps":
                 self.read_lammps_dump(input_)
@@ -260,9 +301,17 @@ class UnitCell(object):
 
     def shift(self, s_x, s_y, s_z, convention):
         """
-        Shifts all atoms in the unit cell by s_i in the i-direction for
-        x, y, z. convention determines whether shift is done to atoms in cartesian
-        or direct coordinate systems.
+        Shifts all atoms in the unit cell.
+
+        Parameters
+        ----------
+        s_x, s_y, s_z : float
+            Distance by which to shift all atoms in the unitcell along x/a, y/b,
+            z/c, respectively. Units and direction determined by `convention`.
+        convention : str
+            String specifying whether the shifts are in Angstroms along the x,
+            y, z axes, or in fractional units of unitcell parameters along the
+            unitcell parameters a, b, c.
 
         """
         shift = np.array((s_x, s_y, s_z))
@@ -308,6 +357,23 @@ class UnitCell(object):
         either direct or cartesian coordinates. Optionally, a velocity for the
         new atom may be specified. The new atom will be added to the end of the
         list of atoms.
+
+        Parameters
+        ----------
+        pos : numpy array
+            Position of new atom in coordinates given by `convention`.
+            np.shape(pos) == (3,)
+        type_ : int or str
+            Integer or string specifying the type of atom to add to the
+            UnitCell.
+        convention : str
+            String specifying whether `pos` is given in cartesian coordinates
+            (convention is 'c', 'C', 'k', 'K', or 'Cartesian') or in fractional
+            units of the unitcell vectors (convention is 'd', 'D', or 'Direct').
+        vel : numpy array, optional
+            Velocity of new atom in Cartesian coordinates. Defaults to
+            (0., 0., 0.).
+            np.shape(vel) == (3,)
 
         """
 
@@ -370,24 +436,24 @@ class UnitCell(object):
         Deletes the atom number index.
 
         """
-        type = 0
+        type_ = 0
         loc = 0
         for i in range(len(self.atom_types)):
             loc += self.atom_types[i]
-            type = i
+            type_ = i
             if loc > index:
                 break
         self.num_atoms -= 1
         self.atom_positions = np.delete(self.atom_positions, index, 0)
         self.atom_velocities = np.delete(self.atom_velocities, index, 0)
         self.atom_names.pop(index)
-        if self.atom_types[type] == 1:
-            self.atom_types.pop(type)
+        if self.atom_types[type_] == 1:
+            self.atom_types.pop(type_)
             self.num_atom_types -= 1
         else:
-            self.atom_types[type] -= 1
+            self.atom_types[type_] -= 1
 
-    def change_atom_type(self, index, type):
+    def change_atom_type(self, index, type_):
         """
         Changes the type of atom number index to the type given.
 
@@ -396,7 +462,7 @@ class UnitCell(object):
         vel = self.atom_velocities[index]
         convention = self.convention
         self.delete_atom(index)
-        self.add_atom(pos, type, convention, vel)
+        self.add_atom(pos, type_, convention, vel)
 
     def sort_atoms(self):
         """
@@ -405,6 +471,7 @@ class UnitCell(object):
 
         """
         def argsort(seq):
+            """Sort sequence by argument"""
             return sorted(range(len(seq)), key=seq.__getitem__)
         index = argsort(self.atom_names)
         print index
@@ -928,6 +995,7 @@ class UnitCell(object):
         """
         Returns a string containing the unit cell information in a
         VASP-formatted file.
+
         """
         if self.name[-1] == "\n":
             output = self.name
@@ -970,6 +1038,7 @@ class UnitCell(object):
         Returns a string containing the unit cell information in ezvasp
         formatting, ready to be appended to the end of an existing vasp.in-like
         file.
+
         """
         # Create ezvasp-formatted text
         if self.name[-1] == "\n":
@@ -996,6 +1065,7 @@ class UnitCell(object):
         """
         Returns a string containing the unit cell information in a
         GULP-formatted file.
+
         """
         self.convention = 'Direct'
         self.set_scale()
@@ -1030,6 +1100,7 @@ class UnitCell(object):
         """
         Returns a string containing the unit cell information in a
         LAMMPS-formatted file. Only works for orthogonal unit cells!
+
         """
         self.set_scale()
         self.to_cart()
@@ -1065,6 +1136,7 @@ class UnitCell(object):
         """
         Returns a string containing the unit cell information in a
         findsym-formatted file.
+
         """
         self.set_scale()
         self.convention = 'Direct'
