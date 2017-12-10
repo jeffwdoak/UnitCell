@@ -18,9 +18,23 @@ File-Format Conversions
 - gulp_to_gulp : Converts GULP output format to GULP input format.
 - vasp_to_findsym : Converts VASP format (4 or 5) to findsym format.
 - vasp_to_gulp : Converts VASP format (4 or 5) to GULP input format.
-- vasp_to_lammps : Converts VASP format (4 or 5) to LAMMPS input format. 
+- vasp_to_lammps : Converts VASP format (4 or 5) to LAMMPS input format.  
     This conversion requires the unitcell to be orthogonal and the unit cell 
     parameter matrix to be diagonal.
 
-Space group calculations require the findsym software, part of the 
-[isotropy software suite](http://stokes.byu.edu/iso/isolinux.php).
+Unit Cell Manipulations
+-----------------------
+This package can be used to calculate quantitites related to a unit cell and
+manipulate parameters of a unit cell:
+- Calculate the center of mass of atoms in the cell
+- Displace all atoms in the unit cell by specified amounts
+- Calculate reciprocal-space lattice vectors of the cell
+- Calculate k-point mesh corresponding to a desired KPPRA 
+    (with several caveats, see kmesh.py for details).
+- Calculate the electrostatic potential alignment between two point defect 
+    calculations or a point defect calculation and the perfect crystal 
+    calculation. This electrostatic potential alignment was used in
+    [Doak, Michel, & Wolverton, J. Mater. Chem. C 3, 10630–10649 (2015)](http://xlink.rsc.org/?DOI=C5TC02252E).
+- Calculate the space group of a crystal. Space group calculations require the 
+    findsym software, part of the 
+    [isotropy software suite](http://stokes.byu.edu/iso/isolinux.php).
