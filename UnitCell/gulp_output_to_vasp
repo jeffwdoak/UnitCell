@@ -1,9 +1,15 @@
 #!/usr/bin/env python
-from unitcell import *
+
+"""
+Convert a unitcell in a GULP output file to a VASP-formatted file.
+
+"""
+
 import sys
 
-file = sys.argv[1]
-cell_file = open(file,'r')
-cell = UnitCell(cell_file,"gulp_output")
+from unitcell import UnitCell
+
+with open(sys.argv[1], 'r') as cell_file:
+    cell = UnitCell(cell_file,"gulp_output")
 vasp = cell.output_vasp()
 print vasp
